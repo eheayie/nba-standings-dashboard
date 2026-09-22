@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Season on the Board — NBA Standings Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --court: #E8891C;
+    --court-dim: #B96A12;
+    --west: #2EC4B6;
+    --west-dim: #1F8E83;
+    --ink: #F4EFE4;
+    --ink-dim: #A8A296;
+    --bg: #12151A;
+    --panel: #1B1F26;
+    --panel-line: #2B2F37;
+    --danger: #E0525A;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ink: #F4EFE4;
+      --bg: #12151A;
+      --panel: #1B1F26;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 72px 0 48px;
+    border-bottom: 1px solid var(--panel-line);
+    background:
+      radial-gradient(circle at 88% -10%, rgba(232,137,28,0.16), transparent 45%),
+      radial-gradient(circle at 8% 110%, rgba(46,196,182,0.12), transparent 40%);
+  }
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--court);
+    letter-spacing: 0.04em;
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(40px, 6vw, 68px);
+    line-height: 0.98;
+    margin: 0 0 18px;
+    letter-spacing: -0.01em;
+    max-width: 11ch;
+  }
+  .hero p.lede {
+    max-width: 58ch;
+    font-size: 17px;
+    color: var(--ink-dim);
+    margin: 0 0 36px;
+  }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--panel-line);
+    border: 1px solid var(--panel-line);
+  }
+  .hero-stat {
+    background: var(--panel);
+    padding: 20px 22px;
+  }
+  .hero-stat .num {
+    font-family: 'Oswald', sans-serif;
+    font-size: 34px;
+    font-weight: 600;
+    color: var(--court);
+  }
+  .hero-stat.west .num { color: var(--west); }
+  .hero-stat .label {
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-top: 2px;
+  }
+  .hero-stat .sub {
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-top: 6px;
+  }
+
+  /* ---------- Sections ---------- */
+  section { padding: 56px 0; border-bottom: 1px solid var(--panel-line); }
+  section:last-of-type { border-bottom: none; }
+  h2 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0 0 6px;
+  }
+  .section-note {
+    color: var(--ink-dim);
+    font-size: 15px;
+    max-width: 62ch;
+    margin: 0 0 32px;
+  }
+
+  /* ---------- Standings tables ---------- */
+  .conf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+  @media (max-width: 760px) {
+    .conf-grid { grid-template-columns: 1fr; }
+  }
+  .conf-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+  }
+  .conf-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--panel-line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .conf-head h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  .conf-head .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+  .east .dot { background: var(--court); }
+  .west .dot { background: var(--west); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--ink-dim);
+    font-size: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  th.num, td.num { text-align: right; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.playin td { color: var(--ink-dim); }
+  tbody tr.out td { color: #6B6759; }
+  .team-name { display: flex; align-items: center; gap: 10px; }
+  .seed { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--ink-dim); width: 16px; }
+  .bar-track {
+    width: 64px;
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .bar-fill { height: 100%; background: var(--court); }
+  .west .bar-fill { background: var(--west); }
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+  }
+  .tag.clinch { background: rgba(232,137,28,0.16); color: var(--court); }
+  .tag.playin { background: rgba(255,255,255,0.08); color: var(--ink-dim); }
+
+  /* ---------- Chart ---------- */
+  .chart-shell {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    padding: 24px 20px 8px;
+  }
+  #winPctChart { max-width: 100%; }
+
+  /* ---------- Division comparison ---------- */
+  .div-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--panel-line);
+    border: 1px solid var(--panel-line);
+  }
+  .div-card { background: var(--panel); padding: 18px 20px; }
+  .div-card .conf-tag { font-size: 11px; color: var(--ink-dim); font-family: 'Space Mono', monospace; }
+  .div-card .div-name { font-family: 'Oswald', sans-serif; font-size: 18px; margin: 4px 0 12px; }
+  .div-card .avg { font-family: 'Oswald', sans-serif; font-size: 30px; color: var(--court); }
+  .div-card.west .avg { color: var(--west); }
+  .div-card .avg-label { font-size: 12px; color: var(--ink-dim); margin-bottom: 10px; }
+  .div-track { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .div-fill { height: 100%; background: var(--court); }
+  .div-card.west .div-fill { background: var(--west); }
+
+  /* ---------- Insights ---------- */
+  .insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .insight {
+    padding: 20px;
+    border-left: 2px solid var(--court);
+    background: rgba(232,137,28,0.05);
+  }
+  .insight.alt { border-left-color: var(--west); background: rgba(46,196,182,0.05); }
+  .insight h4 { font-family: 'Oswald', sans-serif; font-size: 15px; margin: 0 0 6px; font-weight: 600; }
+  .insight p { margin: 0; font-size: 14px; color: var(--ink-dim); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    padding: 32px 0 48px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  footer a { color: var(--court); text-decoration: none; }
+  footer .methodology { max-width: 68ch; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <p class="eyebrow">NBA · Full-Season Standings</p>
+    <h1>Season on the Board</h1>
+    <p class="lede">A breakdown of how all 30 teams' records shaped the playoff picture — conference by conference, division by division — read straight from the final standings.</p>
+    <div class="hero-stats" id="heroStats"></div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Final Standings</h2>
+    <p class="section-note">Seed, record, and win percentage for every team. Faded rows missed the playoff picture entirely.</p>
+    <div class="conf-grid">
+      <div class="conf-card east">
+        <div class="conf-head">
+          <h3><span class="dot"></span>Eastern Conference</h3>
+        </div>
+        <table id="eastTable"></table>
+      </div>
+      <div class="conf-card west">
+        <div class="conf-head">
+          <h3><span class="dot"></span>Western Conference</h3>
+        </div>
+        <table id="westTable"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Win Percentage, Every Team</h2>
+    <p class="section-note">All 30 teams ranked side by side, colored by conference. The gap between the top and bottom of the league this season: a full 57-point swing in winning percentage.</p>
+    <div class="chart-shell">
+      <canvas id="winPctChart" height="620"></canvas>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Division Strength</h2>
+    <p class="section-note">Average win percentage across each division's five teams — a rough read on which divisions were top-heavy versus balanced.</p>
+    <div class="div-grid" id="divGrid"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Reading the Season</h2>
+    <div class="insight-grid" id="insightGrid"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="methodology">Built with team-level season standings (wins, losses, win percentage, conference, division, and playoff status) for all 30 NBA teams. Division and conference averages are simple means of each group's win percentage; the "closest race" figures compare consecutive seeds within a conference.</p>
+    <p>Data science &amp; visualization project · Chart rendered with Chart.js</p>
+  </div>
+</footer>
+
+<script>
+const standings = [{"rank": {"conference": 1, "division": 1, "clinched": "conference"}, "team": {"name": "Detroit Pistons"}, "wins": 60, "losses": 22, "win_percentage": 0.732, "conference": "EASTERN CONFERENCE", "division": "Central"}, {"rank": {"conference": 4, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "Cleveland Cavaliers"}, "wins": 52, "losses": 30, "win_percentage": 0.634, "conference": "EASTERN CONFERENCE", "division": "Central"}, {"rank": {"conference": 11, "division": 3, "clinched": "eliminated"}, "team": {"name": "Milwaukee Bucks"}, "wins": 32, "losses": 50, "win_percentage": 0.39, "conference": "EASTERN CONFERENCE", "division": "Central"}, {"rank": {"conference": 12, "division": 4, "clinched": "eliminated"}, "team": {"name": "Chicago Bulls"}, "wins": 31, "losses": 51, "win_percentage": 0.378, "conference": "EASTERN CONFERENCE", "division": "Central"}, {"rank": {"conference": 14, "division": 5, "clinched": "eliminated"}, "team": {"name": "Indiana Pacers"}, "wins": 19, "losses": 63, "win_percentage": 0.232, "conference": "EASTERN CONFERENCE", "division": "Central"}, {"rank": {"conference": 6, "division": 1, "clinched": "division_playoff_berth"}, "team": {"name": "Atlanta Hawks"}, "wins": 46, "losses": 36, "win_percentage": 0.561, "conference": "EASTERN CONFERENCE", "division": "Southeast"}, {"rank": {"conference": 8, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "Orlando Magic"}, "wins": 45, "losses": 37, "win_percentage": 0.549, "conference": "EASTERN CONFERENCE", "division": "Southeast"}, {"rank": {"conference": 9, "division": 3, "clinched": "play_in_berth"}, "team": {"name": "Charlotte Hornets"}, "wins": 44, "losses": 38, "win_percentage": 0.537, "conference": "EASTERN CONFERENCE", "division": "Southeast"}, {"rank": {"conference": 10, "division": 4, "clinched": "play_in_berth"}, "team": {"name": "Miami Heat"}, "wins": 43, "losses": 39, "win_percentage": 0.524, "conference": "EASTERN CONFERENCE", "division": "Southeast"}, {"rank": {"conference": 15, "division": 5, "clinched": "eliminated"}, "team": {"name": "Washington Wizards"}, "wins": 17, "losses": 65, "win_percentage": 0.207, "conference": "EASTERN CONFERENCE", "division": "Southeast"}, {"rank": {"conference": 2, "division": 1, "clinched": "division_playoff_berth"}, "team": {"name": "Boston Celtics"}, "wins": 56, "losses": 26, "win_percentage": 0.683, "conference": "EASTERN CONFERENCE", "division": "Atlantic"}, {"rank": {"conference": 3, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "New York Knicks"}, "wins": 53, "losses": 29, "win_percentage": 0.646, "conference": "EASTERN CONFERENCE", "division": "Atlantic"}, {"rank": {"conference": 5, "division": 3, "clinched": "playoff_berth"}, "team": {"name": "Toronto Raptors"}, "wins": 46, "losses": 36, "win_percentage": 0.561, "conference": "EASTERN CONFERENCE", "division": "Atlantic"}, {"rank": {"conference": 7, "division": 4, "clinched": "playoff_berth"}, "team": {"name": "Philadelphia 76ers"}, "wins": 45, "losses": 37, "win_percentage": 0.549, "conference": "EASTERN CONFERENCE", "division": "Atlantic"}, {"rank": {"conference": 13, "division": 5, "clinched": "eliminated"}, "team": {"name": "Brooklyn Nets"}, "wins": 20, "losses": 62, "win_percentage": 0.244, "conference": "EASTERN CONFERENCE", "division": "Atlantic"}, {"rank": {"conference": 4, "division": 1, "clinched": "division_playoff_berth"}, "team": {"name": "Los Angeles Lakers"}, "wins": 53, "losses": 29, "win_percentage": 0.646, "conference": "WESTERN CONFERENCE", "division": "Pacific"}, {"rank": {"conference": 8, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "Phoenix Suns"}, "wins": 45, "losses": 37, "win_percentage": 0.549, "conference": "WESTERN CONFERENCE", "division": "Pacific"}, {"rank": {"conference": 9, "division": 3, "clinched": "play_in_berth"}, "team": {"name": "LA Clippers"}, "wins": 42, "losses": 40, "win_percentage": 0.512, "conference": "WESTERN CONFERENCE", "division": "Pacific"}, {"rank": {"conference": 10, "division": 4, "clinched": "play_in_berth"}, "team": {"name": "Golden State Warriors"}, "wins": 37, "losses": 45, "win_percentage": 0.451, "conference": "WESTERN CONFERENCE", "division": "Pacific"}, {"rank": {"conference": 14, "division": 5, "clinched": "eliminated"}, "team": {"name": "Sacramento Kings"}, "wins": 22, "losses": 60, "win_percentage": 0.268, "conference": "WESTERN CONFERENCE", "division": "Pacific"}, {"rank": {"conference": 1, "division": 1, "clinched": "conference"}, "team": {"name": "Oklahoma City Thunder"}, "wins": 64, "losses": 18, "win_percentage": 0.78, "conference": "WESTERN CONFERENCE", "division": "Northwest"}, {"rank": {"conference": 3, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "Denver Nuggets"}, "wins": 54, "losses": 28, "win_percentage": 0.659, "conference": "WESTERN CONFERENCE", "division": "Northwest"}, {"rank": {"conference": 6, "division": 3, "clinched": "playoff_berth"}, "team": {"name": "Minnesota Timberwolves"}, "wins": 49, "losses": 33, "win_percentage": 0.598, "conference": "WESTERN CONFERENCE", "division": "Northwest"}, {"rank": {"conference": 7, "division": 4, "clinched": "playoff_berth"}, "team": {"name": "Portland Trail Blazers"}, "wins": 42, "losses": 40, "win_percentage": 0.512, "conference": "WESTERN CONFERENCE", "division": "Northwest"}, {"rank": {"conference": 15, "division": 5, "clinched": "eliminated"}, "team": {"name": "Utah Jazz"}, "wins": 22, "losses": 60, "win_percentage": 0.268, "conference": "WESTERN CONFERENCE", "division": "Northwest"}, {"rank": {"conference": 2, "division": 1, "clinched": "division_playoff_berth"}, "team": {"name": "San Antonio Spurs"}, "wins": 62, "losses": 20, "win_percentage": 0.756, "conference": "WESTERN CONFERENCE", "division": "Southwest"}, {"rank": {"conference": 5, "division": 2, "clinched": "playoff_berth"}, "team": {"name": "Houston Rockets"}, "wins": 52, "losses": 30, "win_percentage": 0.634, "conference": "WESTERN CONFERENCE", "division": "Southwest"}, {"rank": {"conference": 11, "division": 3, "clinched": "eliminated"}, "team": {"name": "New Orleans Pelicans"}, "wins": 26, "losses": 56, "win_percentage": 0.317, "conference": "WESTERN CONFERENCE", "division": "Southwest"}, {"rank": {"conference": 12, "division": 4, "clinched": "eliminated"}, "team": {"name": "Dallas Mavericks"}, "wins": 26, "losses": 56, "win_percentage": 0.317, "conference": "WESTERN CONFERENCE", "division": "Southwest"}, {"rank": {"conference": 13, "division": 5, "clinched": "eliminated"}, "team": {"name": "Memphis Grizzlies"}, "wins": 25, "losses": 57, "win_percentage": 0.305, "conference": "WESTERN CONFERENCE", "division": "Southwest"}];
+
+const east = standings.filter(t => t.conference === "EASTERN CONFERENCE").sort((a,b) => a.rank.conference - b.rank.conference);
+const west = standings.filter(t => t.conference === "WESTERN CONFERENCE").sort((a,b) => a.rank.conference - b.rank.conference);
+
+function clinchTag(status) {
+  if (status === "conference") return '<span class="tag clinch">1 SEED</span>';
+  if (status === "division_playoff_berth") return '<span class="tag clinch">DIV · PLAYOFF</span>';
+  if (status === "playoff_berth") return '<span class="tag clinch">PLAYOFF</span>';
+  if (status === "play_in_berth") return '<span class="tag playin">PLAY-IN</span>';
+  return '';
+}
+
+function rowClass(status) {
+  if (status === "eliminated") return "out";
+  if (status === "play_in_berth") return "playin";
+  return "";
+}
+
+function renderTable(el, teams, isWest) {
+  const maxPct = Math.max(...teams.map(t => t.win_percentage));
+  let rows = teams.map(t => `
+    <tr class="${rowClass(t.rank.clinched)}">
+      <td class="num"><span class="seed">${t.rank.conference}</span></td>
+      <td>
+        <div class="team-name">${t.team.name}</div>
+      </td>
+      <td class="num">${t.wins}-${t.losses}</td>
+      <td class="num">
+        <span class="bar-track"><span class="bar-fill" style="width:${(t.win_percentage/maxPct*100).toFixed(0)}%"></span></span>
+      </td>
+      <td class="num">${t.win_percentage.toFixed(3).slice(1)}</td>
+      <td>${clinchTag(t.rank.clinched)}</td>
+    </tr>`).join("");
+  el.innerHTML = `
+    <thead><tr>
+      <th>#</th><th>Team</th><th class="num">Record</th><th></th><th class="num">Pct</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>`;
+}
+renderTable(document.getElementById("eastTable"), east, false);
+renderTable(document.getElementById("westTable"), west, true);
+
+// ---- Hero stats ----
+const best = [...standings].sort((a,b) => b.win_percentage - a.win_percentage)[0];
+const worst = [...standings].sort((a,b) => a.win_percentage - b.win_percentage)[0];
+const avgWinPct = (standings.reduce((s,t) => s + t.win_percentage, 0) / standings.length);
+const eastAvg = east.reduce((s,t) => s + t.win_percentage, 0) / east.length;
+const westAvg = west.reduce((s,t) => s + t.win_percentage, 0) / west.length;
+
+document.getElementById("heroStats").innerHTML = `
+  <div class="hero-stat">
+    <div class="num">${best.wins}-${best.losses}</div>
+    <div class="label">Best record</div>
+    <div class="sub">${best.team.name}</div>
+  </div>
+  <div class="hero-stat west">
+    <div class="num">${worst.wins}-${worst.losses}</div>
+    <div class="label">Worst record</div>
+    <div class="sub">${worst.team.name}</div>
+  </div>
+  <div class="hero-stat">
+    <div class="num">${(eastAvg*100).toFixed(1)}%</div>
+    <div class="label">Eastern avg win rate</div>
+  </div>
+  <div class="hero-stat west">
+    <div class="num">${(westAvg*100).toFixed(1)}%</div>
+    <div class="label">Western avg win rate</div>
+  </div>
+`;
+
+// ---- Bar chart, all 30 teams ----
+const sorted = [...standings].sort((a,b) => b.win_percentage - a.win_percentage);
+const ctx = document.getElementById('winPctChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: sorted.map(t => t.team.name),
+    datasets: [{
+      data: sorted.map(t => (t.win_percentage*100).toFixed(1)),
+      backgroundColor: sorted.map(t => t.conference === "WESTERN CONFERENCE" ? '#2EC4B6' : '#E8891C'),
+      borderRadius: 2,
+      barThickness: 14,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (item) => `${item.raw}% win rate`
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 100,
+        grid: { color: 'rgba(255,255,255,0.06)' },
+        ticks: { color: '#A8A296', font: { family: 'Space Mono', size: 10 }, callback: v => v + '%' }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#F4EFE4', font: { family: 'Inter', size: 11 } }
+      }
+    }
+  }
+});
+
+// ---- Division strength ----
+const divisions = {};
+standings.forEach(t => {
+  const key = t.conference + "||" + t.division;
+  if (!divisions[key]) divisions[key] = { conference: t.conference, division: t.division, teams: [] };
+  divisions[key].teams.push(t);
+});
+const divArr = Object.values(divisions).map(d => ({
+  ...d,
+  avg: d.teams.reduce((s,t) => s + t.win_percentage, 0) / d.teams.length
+})).sort((a,b) => b.avg - a.avg);
+const maxDivAvg = Math.max(...divArr.map(d => d.avg));
+
+document.getElementById("divGrid").innerHTML = divArr.map(d => `
+  <div class="div-card ${d.conference === 'WESTERN CONFERENCE' ? 'west' : ''}">
+    <div class="conf-tag">${d.conference === 'WESTERN CONFERENCE' ? 'WEST' : 'EAST'}</div>
+    <div class="div-name">${d.division}</div>
+    <div class="avg">${(d.avg*100).toFixed(1)}%</div>
+    <div class="avg-label">avg win rate</div>
+    <div class="div-track"><div class="div-fill" style="width:${(d.avg/maxDivAvg*100).toFixed(0)}%"></div></div>
+  </div>
+`).join("");
+
+// ---- Insights ----
+function closestRace(conf) {
+  const sortedConf = [...conf].sort((a,b) => a.rank.conference - b.rank.conference);
+  let minGap = Infinity, pair = null;
+  for (let i = 0; i < sortedConf.length - 1; i++) {
+    const gap = sortedConf[i].win_percentage - sortedConf[i+1].win_percentage;
+    if (gap < minGap) { minGap = gap; pair = [sortedConf[i], sortedConf[i+1]]; }
+  }
+  return { pair, gap: minGap };
+}
+const eastRace = closestRace(east);
+const westRace = closestRace(west);
+const strongestDiv = divArr[0];
+const weakestDiv = divArr[divArr.length-1];
+
+document.getElementById("insightGrid").innerHTML = `
+  <div class="insight">
+    <h4>Tightest race, East</h4>
+    <p>${eastRace.pair[0].team.name} (#${eastRace.pair[0].rank.conference}) edged ${eastRace.pair[1].team.name} (#${eastRace.pair[1].rank.conference}) by just ${(eastRace.gap*100).toFixed(1)} points of win percentage — a single-game margin at this scale.</p>
+  </div>
+  <div class="insight alt">
+    <h4>Tightest race, West</h4>
+    <p>${westRace.pair[0].team.name} (#${westRace.pair[0].rank.conference}) and ${westRace.pair[1].team.name} (#${westRace.pair[1].rank.conference}) were separated by only ${(westRace.gap*100).toFixed(1)} points of win percentage.</p>
+  </div>
+  <div class="insight">
+    <h4>Strongest division</h4>
+    <p>${strongestDiv.division} (${strongestDiv.conference === 'WESTERN CONFERENCE' ? 'West' : 'East'}) averaged a ${(strongestDiv.avg*100).toFixed(1)}% win rate across its five teams — the most top-heavy group in the league.</p>
+  </div>
+  <div class="insight alt">
+    <h4>Weakest division</h4>
+    <p>${weakestDiv.division} (${weakestDiv.conference === 'WESTERN CONFERENCE' ? 'West' : 'East'}) trailed at a ${(weakestDiv.avg*100).toFixed(1)}% average win rate, the softest division this season.</p>
+  </div>
+`;
+</script>
+</body>
+</html>
