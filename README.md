@@ -2,7 +2,7 @@
 
 A two-part data science project analyzing a full NBA regular season across all 30 teams, 6 divisions, and 2 conferences: a Python/pandas analysis notebook, and an interactive web dashboard built from the same dataset.
 
-**[Live dashboard →](https://YOUR_USERNAME.github.io/nba-standings-dashboard/)**
+**[Live dashboard →](https://eheayie.github.io/nba-standings-dashboard/)**
 **[Analysis notebook →](./analysis.ipynb)**
 
 ## Part 1: Analysis (`analysis.ipynb`)
