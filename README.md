@@ -2,7 +2,7 @@
 
 An interactive data analytics dashboard visualizing a full NBA regular season across all 30 teams, 6 divisions, and 2 conferences.
 
-**[Live demo →](https://YOUR_USERNAME.github.io/nba-standings-dashboard/)**
+**[Live demo →](https://eheayie.github.io/nba-standings-dashboard/)**
 
 ## What it does
 
