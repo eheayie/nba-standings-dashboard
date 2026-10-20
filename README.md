@@ -1,4 +1,4 @@
-# NBA Standings Analysis & Dashboard
+# NBA Standings Analysis & Dashboard: 2025/2026 Season
 
 A two-part data science project analyzing a full NBA regular season across all 30 teams, 6 divisions, and 2 conferences: a Python/pandas analysis notebook, and an interactive web dashboard built from the same dataset.
 
