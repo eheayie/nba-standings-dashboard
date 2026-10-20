@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Season on the Board — NBA Standings Analytics</title>
+<title>Season on the Board — 2025/2026 NBA Standings Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -240,7 +240,7 @@
   <div class="wrap">
     <p class="eyebrow">NBA · 2025/26 Full-Season Standings</p>
     <h1>Season on the Board</h1>
-    <p class="lede">A breakdown of how all 30 teams' records shaped the playoff picture — conference by conference, division by division — read straight from the final standings.</p>
+    <p class="lede">A breakdown of how all 30 teams' records shaped the playoff picture: conference by conference, division by division, read straight from the final standings.</p>
     <div class="hero-stats" id="heroStats"></div>
   </div>
 </div>
@@ -451,7 +451,7 @@ const weakestDiv = divArr[divArr.length-1];
 document.getElementById("insightGrid").innerHTML = `
   <div class="insight">
     <h4>Tightest race, East</h4>
-    <p>${eastRace.pair[0].team.name} (#${eastRace.pair[0].rank.conference}) edged ${eastRace.pair[1].team.name} (#${eastRace.pair[1].rank.conference}) by just ${(eastRace.gap*100).toFixed(1)} points of win percentage — a single-game margin at this scale.</p>
+    <p>${eastRace.pair[0].team.name} (#${eastRace.pair[0].rank.conference}) edged ${eastRace.pair[1].team.name} (#${eastRace.pair[1].rank.conference}) by just ${(eastRace.gap*100).toFixed(1)} points of win percentage: a single-game margin at this scale.</p>
   </div>
   <div class="insight alt">
     <h4>Tightest race, West</h4>
@@ -459,7 +459,7 @@ document.getElementById("insightGrid").innerHTML = `
   </div>
   <div class="insight">
     <h4>Strongest division</h4>
-    <p>${strongestDiv.division} (${strongestDiv.conference === 'WESTERN CONFERENCE' ? 'West' : 'East'}) averaged a ${(strongestDiv.avg*100).toFixed(1)}% win rate across its five teams — the most top-heavy group in the league.</p>
+    <p>${strongestDiv.division} (${strongestDiv.conference === 'WESTERN CONFERENCE' ? 'West' : 'East'}) averaged a ${(strongestDiv.avg*100).toFixed(1)}% win rate across its five teams: the most top-heavy group in the league.</p>
   </div>
   <div class="insight alt">
     <h4>Weakest division</h4>
