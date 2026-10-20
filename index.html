@@ -238,7 +238,7 @@
 
 <div class="hero">
   <div class="wrap">
-    <p class="eyebrow">NBA · 2025-26 Full-Season Standings</p>
+    <p class="eyebrow">NBA · 2025/26 Full-Season Standings</p>
     <h1>Season on the Board</h1>
     <p class="lede">A breakdown of how all 30 teams' records shaped the playoff picture — conference by conference, division by division — read straight from the final standings.</p>
     <div class="hero-stats" id="heroStats"></div>
@@ -306,7 +306,7 @@ const west = standings.filter(t => t.conference === "WESTERN CONFERENCE").sort((
 
 function clinchTag(status) {
   if (status === "conference") return '<span class="tag clinch">1 SEED</span>';
-  if (status === "division_playoff_berth") return '<span class="tag clinch">DIV · PLAYOFF</span>';
+  if (status === "division_playoff_berth") return '<span class="tag clinch">DIV WINNER · PLAYOFF</span>';
   if (status === "playoff_berth") return '<span class="tag clinch">PLAYOFF</span>';
   if (status === "play_in_berth") return '<span class="tag playin">PLAY-IN</span>';
   return '';
